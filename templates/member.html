@@ -1,0 +1,10 @@
+{% extends "base.html" %}{% block body %}<h2>My photos</h2>
+<section class="card" id="finder"><p>To find your photos we take a live selfie (3 quick frames). The selfie is compared once and <b>never stored</b>.</p>
+<label class="check"><input type="checkbox" id="consent"> I consent to face matching on my live selfie, and I understand I can delete my face data at any time.</label>
+<video id="cam" autoplay playsinline muted hidden></video><p id="prompt" class="big"></p>
+<button class="btn" id="start" disabled>Start selfie</button><p id="msg" class="muted"></p></section>
+<div class="grid" id="results">{% for p in photos %}<figure>
+{% if p.kind=='image' %}<img src="/media/{{ p.id }}" loading="lazy">{% else %}<video src="/media/{{ p.id }}" controls preload="none" poster="/media/{{ p.id }}?thumb=1"></video>{% endif %}
+<figcaption>by {{ p.photographer }}</figcaption></figure>{% endfor %}</div>
+{% if linked %}<p><button class="link danger" id="wipe">Delete my face data</button></p>{% endif %}
+{% endblock %}{% block js %}<script src="/static/find.js"></script>{% endblock %}

@@ -1,0 +1,11 @@
+{% extends "base.html" %}{% block body %}<h2>Your uploads</h2>
+<p class="muted">Public profile: <a href="/p/{{ user.username }}">/p/{{ user.username }}</a></p>
+<form id="up" class="card"><input type="file" name="file" accept="image/*,video/*" multiple required>
+<input name="title" placeholder="Title (optional)">
+<label class="check"><input type="checkbox" name="consent" value="yes" required> I confirm I have the right to upload these and that faces in them may be indexed so people can find their own photos.</label>
+<button class="btn">Upload</button><p id="status" class="muted"></p></form>
+<div class="grid">{% for p in photos %}<figure>
+{% if p.kind=='image' %}<img src="/media/{{ p.id }}" loading="lazy">{% else %}<video src="/media/{{ p.id }}" controls preload="none" poster="/media/{{ p.id }}?thumb=1"></video>{% endif %}
+<figcaption>{{ p.title or p.kind }} · {{ p.people }} people
+<form method="post" action="/photo/{{ p.id }}/delete" class="inline"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="link">Delete</button></form></figcaption></figure>{% endfor %}</div>
+{% endblock %}{% block js %}<script src="/static/upload.js"></script>{% endblock %}
