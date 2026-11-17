@@ -2,5 +2,5 @@
 {% if error %}<p class="err">{{ error }}</p>{% endif %}<input type="hidden" name="csrf" value="{{ csrf }}">
 <label>Username<input name="username" required minlength="3" maxlength="30"></label>
 <label>Password<input name="password" type="password" required minlength="8"></label>
-<label>I am a<select name="role"><option value="photographer">Photographer (upload photos/videos)</option><option value="member">Member (find my photos)</option></select></label>
+<label>I am a<select name="role"><option value="photographer">Photographer (upload photos)</option><option value="member">Member (find my photos)</option></select></label>
 <button class="btn">Sign up</button></form>{% endblock %}

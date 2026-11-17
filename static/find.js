@@ -1,7 +1,8 @@
+const CSRF = document.querySelector("meta[name=csrf]").content;
 const consent = document.getElementById("consent"), start = document.getElementById("start"),
   cam = document.getElementById("cam"), prompt_ = document.getElementById("prompt"), msg = document.getElementById("msg");
 consent.onchange = () => start.disabled = !consent.checked;
-const post = (url, body) => fetch(url, {method: "POST", headers: {"X-CSRF": window.CSRF, "Content-Type": "application/json"}, body: JSON.stringify(body || {})});
+const post = (url, body) => fetch(url, {method: "POST", headers: {"X-CSRF": CSRF, "Content-Type": "application/json"}, body: JSON.stringify(body || {})});
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 start.onclick = async () => {
   start.disabled = true; msg.textContent = "";

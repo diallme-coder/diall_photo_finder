@@ -4,7 +4,7 @@
 <video id="cam" autoplay playsinline muted hidden></video><p id="prompt" class="big"></p>
 <button class="btn" id="start" disabled>Start selfie</button><p id="msg" class="muted"></p></section>
 <div class="grid" id="results">{% for p in photos %}<figure>
-{% if p.kind=='image' %}<img src="/media/{{ p.id }}" loading="lazy">{% else %}<video src="/media/{{ p.id }}" controls preload="none" poster="/media/{{ p.id }}?thumb=1"></video>{% endif %}
+<img src="/media/{{ p.id }}" loading="lazy">
 <figcaption>by {{ p.photographer }}</figcaption></figure>{% endfor %}</div>
 {% if linked %}<p><button class="link danger" id="wipe">Delete my face data</button></p>{% endif %}
 {% endblock %}{% block js %}<script src="/static/find.js"></script>{% endblock %}

@@ -1,7 +1,7 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Diall Photo Finder</title><link rel="stylesheet" href="/static/style.css"></head><body>
+<meta name="csrf" content="{{ csrf }}"><title>Diall Photo Finder</title><link rel="stylesheet" href="/static/style.css"></head><body>
 <header><a class="logo" href="/">📸 Diall Photo Finder</a><nav>
 {% if user %}<a href="/dashboard">{{ user.username }}</a>
 <form method="post" action="/logout" class="inline"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="link">Log out</button></form>
 {% else %}<a href="/login">Log in</a><a class="btn" href="/register">Sign up</a>{% endif %}</nav></header>
-<main>{% block body %}{% endblock %}</main><script>window.CSRF="{{ csrf }}";</script>{% block js %}{% endblock %}</body></html>
+<main>{% block body %}{% endblock %}</main>{% block js %}{% endblock %}</body></html>

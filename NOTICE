@@ -1,0 +1,17 @@
+Diall Photo Finder
+Copyright (c) 2026 Diall. All rights reserved.
+
+This product uses the following third-party components, each under its own
+license. They are not covered by the copyright notice in LICENSE.
+
+- Flask and Werkzeug (Pallets) - BSD-3-Clause
+- OpenCV (opencv-python-headless) - Apache-2.0
+- NumPy - BSD-3-Clause
+- SFace face-recognition model (OpenCV Zoo, downloaded by
+  scripts/download_models.py) - Apache-2.0
+- YuNet face-detection model (OpenCV Zoo, downloaded by
+  scripts/download_models.py) - MIT (confirm against the model's README in
+  the OpenCV Zoo repository before redistributing)
+
+The model files are not included in this repository (models/*.onnx is
+git-ignored). If you redistribute them, include each license text.

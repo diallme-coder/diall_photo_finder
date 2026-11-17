@@ -1,6 +1,7 @@
 import base64, io, os, sys, tempfile
 os.environ["FACE_ENGINE"] = "mock"
 os.environ["DATA_DIR"] = tempfile.mkdtemp()
+os.environ["DEV"] = "1"
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 import cv2, numpy as np
 import app as A
@@ -25,9 +26,18 @@ class C:
     def signup(s, u, role):
         return s.post("/register", data={"username": u, "password": "password123", "role": role})
 
+YAW = {"straight": 0.0, "left": 0.5, "right": -0.5}   # mock engine yaw = (right stripe - left stripe)/200
+
+def pose(img, yaw):
+    """TEST ONLY: paint the mock engine's left/right brightness stripes so it reads this yaw."""
+    im = img.copy()
+    im[:, :8] = int(128 - 100 * yaw); im[:, -8:] = int(128 + 100 * yaw)
+    return im
+
 def selfie(cl, img, consent=True):
-    ch = cl.post("/api/consent").get_json()["challenge"]
-    return cl.post("/api/find-me", json={"challenge": ch, "frames": [durl(noisy(img)) for _ in range(3)]})
+    ch = cl.post("/api/consent").get_json()
+    frames = [durl(pose(noisy(img), YAW[p])) for p in ch["poses"]]
+    return cl.post("/api/find-me", json={"challenge": ch["challenge"], "frames": frames})
 
 def test_full_flow():
     ph, alice, bob, eve = C(), C(), C(), C()
@@ -71,14 +81,14 @@ def test_full_flow():
     assert r.get_json()["faces"] == 0
     assert "/media/" not in alice.c.get("/dashboard").get_data(as_text=True).split("<h2>My photos</h2>")[1].split("results")[1]
 
-def test_video_upload():
-    import subprocess
+def test_video_upload_rejected():
     ph = C(); ph.signup("vid", "photographer")
-    d = tempfile.mkdtemp(); cv2.imwrite(d + "/f.png", person(9))
-    subprocess.run(["ffmpeg", "-loglevel", "error", "-loop", "1", "-i", d + "/f.png", "-t", "2", "-r", "10",
-                    "-pix_fmt", "yuv420p", d + "/v.mp4"], check=True)
-    r = ph.post("/upload", data={"file": (open(d + "/v.mp4", "rb"), "v.mp4"), "consent": "yes"}, content_type="multipart/form-data")
-    assert r.status_code == 200 and r.get_json()["faces"] >= 2
+    d = tempfile.mkdtemp(); p = d + "/v.mp4"
+    w = cv2.VideoWriter(p, cv2.VideoWriter_fourcc(*"mp4v"), 10, (64, 64))
+    for i in range(20): w.write(np.full((64, 64, 3), i * 10, np.uint8))
+    w.release()
+    r = ph.post("/upload", data={"file": (open(p, "rb"), "v.mp4"), "consent": "yes"}, content_type="multipart/form-data")
+    assert r.status_code == 400
 
 
 def gray_img(vec):
@@ -91,8 +101,8 @@ def test_selfie_links_every_tag_of_the_same_person():
     rng = np.random.default_rng(7)
     v = rng.uniform(-60, 60, 64); v -= v.mean()
     d = rng.uniform(-1, 1, 64); d -= d.mean(); d -= v * (d @ v) / (v @ v)
-    d *= 0.4 * np.linalg.norm(v) / np.linalg.norm(d)
-    pose_x, pose_y = gray_img(v + d), gray_img(v - d)   # cos(x,y)~0.72 -> two tags; each ~0.93 to v
+    d *= 0.28 * np.linalg.norm(v) / np.linalg.norm(d)
+    pose_x, pose_y = gray_img(v + d), gray_img(v - d)   # cos(x,y)~0.86 -> two tags (<0.9 index th); each ~0.96 to v (>=0.95 claim th)
     ph, me_ = C(), C(); ph.signup("pro2", "photographer"); me_.signup("split", "member")
     ids = []
     for img in (pose_x, pose_y):
