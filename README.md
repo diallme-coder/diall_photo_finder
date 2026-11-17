@@ -8,7 +8,8 @@ shows **only** the photos they appear in.
 ```
 pip install -r requirements.txt
 python scripts/download_models.py    # OpenCV Zoo YuNet + SFace (Apache-2.0), needs internet once
-python app.py                         # http://127.0.0.1:5000
+python app.py --dev                   # local test on http://127.0.0.1:5000 (works on Windows/Mac/Linux)
+                                      # without --dev the login cookie needs HTTPS (production)
 python -m pytest tests                # uses FACE_ENGINE=mock (test-only stand-in, not real recognition)
 ```
 Set `SECRET_KEY` and serve behind HTTPS (e.g. gunicorn + reverse proxy) in production; camera access requires HTTPS.

@@ -27,6 +27,12 @@ YAW_STRAIGHT_MAX, YAW_TURN_MIN = 0.12, 0.2   # yaw = (nose_x - eye_mid_x)/eye_di
 TAG_ROW_FRACTION = 0.8                       # share of a tag's face rows a probe must match to claim it
 USERNAME_RE = re.compile(r"[a-z0-9_]{3,30}", re.ASCII)
 
+def dev_mode(argv=None, environ=None):
+    """Plain-HTTP local development: `python app.py --dev` (any OS) or DEV=1."""
+    import sys
+    return "--dev" in (sys.argv if argv is None else argv) or (os.environ if environ is None else environ).get("DEV") == "1"
+
+
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024
 os.makedirs(UPLOADS, exist_ok=True)
@@ -43,7 +49,7 @@ else:
     with open(_key_file) as f:
         app.secret_key = f.read().strip()
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax",
-                  SESSION_COOKIE_SECURE=os.environ.get("DEV") != "1",
+                  SESSION_COOKIE_SECURE=not dev_mode(),
                   PERMANENT_SESSION_LIFETIME=timedelta(hours=12))
 
 _engine = None
@@ -670,4 +676,8 @@ def delete_face_data(u):
 
 
 if __name__ == "__main__":
+    if os.environ.get("FACE_ENGINE") != "mock" and not (os.path.exists(faces.YUNET) and os.path.exists(faces.SFACE)):
+        raise SystemExit("Face models are missing. Run first:  python scripts/download_models.py")
+    if dev_mode():
+        print("DEV mode: plain-HTTP cookies. Open http://127.0.0.1:%s" % os.environ.get("PORT", 5000))
     app.run(host="127.0.0.1", port=int(os.environ.get("PORT", 5000)), debug=False)

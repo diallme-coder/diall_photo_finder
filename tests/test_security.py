@@ -287,3 +287,11 @@ def test_oversized_pixel_frame_is_400():
     png = base64.b64encode(cv2.imencode(".png", np.zeros((7000, 7000, 3), np.uint8), [cv2.IMWRITE_PNG_COMPRESSION, 1])[1].tobytes()).decode()
     r = _findme(m, ["data:image/png;base64," + png] * 1 + [durl(person(1))] * 2)
     assert r.status_code == 400
+
+
+def test_dev_mode_flag_works_without_shell_env_vars():
+    """`python app.py --dev` must work on Windows, where `DEV=1 python app.py` does not."""
+    import app as A
+    assert A.dev_mode(["app.py", "--dev"], {}) is True
+    assert A.dev_mode(["app.py"], {"DEV": "1"}) is True
+    assert A.dev_mode(["app.py"], {}) is False
