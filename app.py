@@ -399,17 +399,21 @@ def find_me(u):
     cents = tag_centroids()
     tag, score = best_match(probe, cents)
     session.pop("challenge", None)
-    mine = db().execute("SELECT tag FROM tags WHERE user_id=?", (u["id"],)).fetchone()
+    mine = {r["tag"] for r in db().execute("SELECT tag FROM tags WHERE user_id=?", (u["id"],))}
     if tag is None or score < th:
         return jsonify(ok=True, matched=False, photos=[])
-    owner = db().execute("SELECT user_id FROM tags WHERE tag=?", (tag,)).fetchone()["user_id"]
-    if owner not in (None, u["id"]):
-        return jsonify(ok=True, matched=False, photos=[])  # already claimed by someone else: never reveal
-    if mine and mine["tag"] != tag:
-        return jsonify(ok=True, matched=False, photos=[])
-    db().execute("UPDATE tags SET user_id=? WHERE tag=?", (u["id"], tag))
+    owners = {t: o for t, o in db().execute("SELECT tag, user_id FROM tags").fetchall()}
+    if owners[tag] not in (None, u["id"]):
+        return jsonify(ok=True, matched=False, photos=[])  # best match already claimed by someone else: never reveal
+    # One person can be split across several tags (poses, lighting): link every close, unclaimed tag.
+    close = [t for t, c in cents.items() if faces.cosine(probe, c) >= th and owners[t] in (None, u["id"])]
+    if mine and not (mine & set(close)):
+        return jsonify(ok=True, matched=False, photos=[])  # a different face than the one already linked
+    for t in close:
+        db().execute("UPDATE tags SET user_id=? WHERE tag=?", (u["id"], t))
     db().commit()
-    n = db().execute("SELECT COUNT(DISTINCT photo_id) c FROM face_rows WHERE tag=?", (tag,)).fetchone()["c"]
+    q = ",".join("?" * len(close))
+    n = db().execute(f"SELECT COUNT(DISTINCT photo_id) c FROM face_rows WHERE tag IN ({q})", close).fetchone()["c"]
     return jsonify(ok=True, matched=True, count=n)
 
 

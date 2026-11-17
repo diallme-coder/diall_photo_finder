@@ -79,3 +79,28 @@ def test_video_upload():
                     "-pix_fmt", "yuv420p", d + "/v.mp4"], check=True)
     r = ph.post("/upload", data={"file": (open(d + "/v.mp4", "rb"), "v.mp4"), "consent": "yes"}, content_type="multipart/form-data")
     assert r.status_code == 200 and r.get_json()["faces"] >= 2
+
+
+def gray_img(vec):
+    g = np.clip(128 + vec.reshape(8, 8), 0, 255).astype(np.uint8)
+    return cv2.cvtColor(cv2.resize(g, (160, 160), interpolation=cv2.INTER_NEAREST), cv2.COLOR_GRAY2BGR)
+
+def test_selfie_links_every_tag_of_the_same_person():
+    """One person can be split into several tags (different poses). A selfie close to each
+    tag must link all of them, so the member sees all their photos."""
+    rng = np.random.default_rng(7)
+    v = rng.uniform(-60, 60, 64); v -= v.mean()
+    d = rng.uniform(-1, 1, 64); d -= d.mean(); d -= v * (d @ v) / (v @ v)
+    d *= 0.4 * np.linalg.norm(v) / np.linalg.norm(d)
+    pose_x, pose_y = gray_img(v + d), gray_img(v - d)   # cos(x,y)~0.72 -> two tags; each ~0.93 to v
+    ph, me_ = C(), C(); ph.signup("pro2", "photographer"); me_.signup("split", "member")
+    ids = []
+    for img in (pose_x, pose_y):
+        r = ph.post("/upload", data={"file": (io.BytesIO(cv2.imencode(".png", img)[1].tobytes()), "x.png"), "consent": "yes"},
+                    content_type="multipart/form-data"); ids.append(r.get_json()["id"])
+    with A.app.app_context():
+        assert A.db().execute("SELECT COUNT(*) c FROM tags WHERE user_id IS NULL").fetchone()["c"] >= 2
+    j = selfie(me_, gray_img(v)).get_json()
+    assert j["matched"] and j["count"] == 2
+    page = me_.c.get("/dashboard").get_data(as_text=True)
+    assert all(f"/media/{i}" in page for i in ids)
