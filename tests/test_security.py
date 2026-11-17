@@ -295,3 +295,25 @@ def test_dev_mode_flag_works_without_shell_env_vars():
     assert A.dev_mode(["app.py", "--dev"], {}) is True
     assert A.dev_mode(["app.py"], {"DEV": "1"}) is True
     assert A.dev_mode(["app.py"], {}) is False
+
+
+def test_dev_server_serves_and_says_why_it_stopped():
+    """Real process: `python app.py --dev` answers HTTP, and on Ctrl+C prints that it stopped and why."""
+    import signal, socket, subprocess, sys, time, urllib.request
+    s = socket.socket(); s.bind(("127.0.0.1", 0)); port = s.getsockname()[1]; s.close()
+    env = dict(os.environ, FACE_ENGINE="mock", PORT=str(port), NO_BROWSER="1", DATA_DIR=tempfile.mkdtemp())
+    p = subprocess.Popen([sys.executable, "-u", os.path.join(ROOT, "app.py"), "--dev"], env=env,
+                         stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    try:
+        code = None
+        for _ in range(60):
+            try:
+                code = urllib.request.urlopen(f"http://127.0.0.1:{port}/", timeout=1).status; break
+            except Exception:
+                time.sleep(0.25)
+        assert code == 200
+        p.send_signal(signal.SIGINT)
+        out = p.communicate(timeout=10)[0]
+    finally:
+        if p.poll() is None: p.kill()
+    assert "Server stopped" in out and "Ctrl+C" in out

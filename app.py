@@ -678,6 +678,19 @@ def delete_face_data(u):
 if __name__ == "__main__":
     if os.environ.get("FACE_ENGINE") != "mock" and not (os.path.exists(faces.YUNET) and os.path.exists(faces.SFACE)):
         raise SystemExit("Face models are missing. Run first:  python scripts/download_models.py")
+    port = int(os.environ.get("PORT", 5000))
+    url = "http://127.0.0.1:%d" % port
     if dev_mode():
-        print("DEV mode: plain-HTTP cookies. Open http://127.0.0.1:%s" % os.environ.get("PORT", 5000))
-    app.run(host="127.0.0.1", port=int(os.environ.get("PORT", 5000)), debug=False)
+        print("DEV mode: plain-HTTP cookies.")
+        if not os.environ.get("NO_BROWSER"):
+            import webbrowser
+            threading.Timer(1.5, webbrowser.open, (url,)).start()
+    print("Open %s in your browser. Keep this window open; press Ctrl+C here only to stop the app." % url)
+    try:
+        app.run(host="127.0.0.1", port=port, debug=False)
+    except KeyboardInterrupt:
+        print("Server stopped: Ctrl+C was pressed.")
+    except OSError as e:
+        raise SystemExit("Server could not start: %s\nAnother program may be using port %d. Try:  set PORT=5001  then run again." % (e, port))
+    else:
+        print("Server stopped (Ctrl+C was pressed or the server was shut down).")
